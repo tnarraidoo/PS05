@@ -1,0 +1,28 @@
+---
+title: "STAT/MATH 495: Problem Set 05"
+author: "WRITE YOUR NAME HERE"
+date: "2017-10-10"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: false
+    smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width=8, fig.height=4.5, message=FALSE)
+set.seed(76)
+```
+
+# Collaboration
+
+Please indicate who you collaborated with on this assignment:
+
+
+# Load packages, data, model formulas
+
+```{r, warning=FALSE}
+
+```
