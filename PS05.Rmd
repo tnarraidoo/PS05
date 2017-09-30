@@ -9,20 +9,46 @@ output:
     toc_depth: 2
     collapsed: false
     smooth_scroll: false
+    df_print: kable
 ---
 
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.width=8, fig.height=4.5, message=FALSE)
+knitr::opts_chunk$set(echo = TRUE, fig.width=8, fig.height=4.5, message=FALSE, 
+                      warning = FALSE)
 set.seed(76)
+
+# Load packages
+library(tidyverse)
+
+# Note the relative file path, and not absolute file path:
+train <- read_csv("data/train.csv")
+test <- read_csv("data/test.csv")
+sample_submission <- read_csv("data/sampleSubmission.csv")
 ```
+
 
 # Collaboration
 
 Please indicate who you collaborated with on this assignment:
 
 
-# Load packages, data, model formulas
+# Exploratory Data Analysis
 
-```{r, warning=FALSE}
+```{r}
+
+```
+
+
+# Model Fit
+
+```{r}
+
+```
+
+
+# Create Submission File
+
+```{r}
 
 ```
