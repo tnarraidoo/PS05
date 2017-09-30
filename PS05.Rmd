@@ -14,8 +14,9 @@ output:
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.width=8, fig.height=4.5, message=FALSE, 
-                      warning = FALSE)
+knitr::opts_chunk$set(
+  echo = TRUE, fig.width=8, fig.height=4.5, message=FALSE, warning = FALSE
+  )
 set.seed(76)
 
 # Load packages
@@ -34,6 +35,8 @@ Please indicate who you collaborated with on this assignment:
 
 
 # Exploratory Data Analysis
+
+Information on the competition can be found [here](https://www.kaggle.com/c/bike-sharing-demand).
 
 ```{r}
 
