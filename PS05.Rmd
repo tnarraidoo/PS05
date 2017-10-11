@@ -1,6 +1,6 @@
 ---
 title: "STAT/MATH 495: Problem Set 05"
-author: "WRITE YOUR NAME HERE"
+author: "Tasheena, Meron, Wayne"
 date: "2017-10-11"
 output:
   html_document:
@@ -11,47 +11,182 @@ output:
     smooth_scroll: false
     df_print: kable
 ---
-
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   echo = TRUE, fig.width=8, fig.height=4.5, message=FALSE, warning = FALSE
   )
 set.seed(76)
-
 # Load packages
 library(tidyverse)
-
+library(knitr)
+library(lubridate)
+library(reshape)
+#library("splitstack")
 # Note the relative file path, and not absolute file path:
 train <- read_csv("data/train.csv")
 test <- read_csv("data/test.csv")
 sample_submission <- read_csv("data/sampleSubmission.csv")
 ```
 
+# Collaboration:
 
-# Collaboration
-
-Please indicate who you collaborated with on this assignment:
-
+Please indicate who you collaborated with on this assignment: -
 
 # Exploratory Data Analysis
 
+For this competition, participants were asked to combine historical usage patterns with weather data in order to forecast bike rental demand in the Capital Bikeshare program in Washington, D.C.
+
+Our task is to use three variables to predict demand for bike rentals.
+
 Information on the competition can be found [here](https://www.kaggle.com/c/bike-sharing-demand).
 
+```{r, echo=FALSE}
+# create a table for variable description.
+Variable <- c("datetime","season", "holiday",
+              "workingday", "weather:", 
+              " "," "," "," ",
+              "temp","atemp","humidity", 
+              "windspeed","casual", "registered", 
+              "count")
+Description <- c("hourly date + timestamp",
+                 "1 = spring, 2 = summer, 3 = fall, 4 = winter",
+                 "whether the day is considered a holiday",
+                 "whether the day is neither a weekend nor holiday",
+                 " ",
+                 "1: Clear, Few clouds, Partly cloudy",
+                 "2: Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist",
+                 "3: Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds",
+                 "4: Heavy Rain + Ice Pallets + Thunderstorm + Mist, Snow + Fog",
+                 "temperature in Celsius",
+                 " 'feels like' temperature in Celsius",
+                 "relative humidity",
+                 "wind speed",
+                 "number of non-registered user rentals initiated",
+                 "number of registered user rentals initiated",
+                 "number of total rentals"
+                 )
+df <- as.data.frame(cbind(Variable, Description))
+kable(df, caption = "Table with variable description")
+```
+
+We have decided to use the variable ‘count’ as our response variable to take into account both registered users and those not registered.
+We have created three variables (month, hour, and wday) from the ‘datetime’ variable to analyze how month, hour and weekday affect the number of bikes checked out.
+
 ```{r}
+# creating new variables: month, weekday, and hour for the train set
+# we won't need year, min and second because second and minute are not valuable info and we only have two years worth of data
+train <- train %>% 
+  mutate(datetime_new = ymd_hms(datetime)) %>% 
+  mutate(
+    month = month(datetime_new), # month in which the bike was checked out
+    hour = hour(datetime_new), # hour of the day the bike was checked out
+    wday = wday(datetime_new) # weekday ranging from 1:7 where 1 is Sunday and 7, Saturday and the sequence ordered
+  )
+```
+
+```{r, echo=FALSE}
+# creating new variables: month, weekday, and hour for the test set
+test2 <- test %>% 
+  mutate(datetime_new = ymd_hms(datetime)) %>% 
+  mutate(
+    month = month(datetime_new),
+    hour = hour(datetime_new),
+    wday = wday(datetime_new)
+  )
+```
+
+For our EDA, we looked at how the timestamp and weather affect the demand for bike rentals.
+
+We first looked at the distribution of bike rental demand throughout the day.We observe that demand for bike rentals varies throughout the days, where it peaks around the beginning of the day( 7 am and 8 am) and end of the day(5 pm and 6 pm) because these are the time people commute to and from work.
+
+```{r, echo=FALSE}
+ggplot(train,aes(x=hour,y=count))+
+  stat_smooth() +
+  geom_point(x=train$hour,color="black") +
+labs( x = "24 hour format)",
+    y = "count(units)",title="Demand of bikes by hours")  + theme(axis.text=element_text(size=15),
+        axis.title=element_text(size=15),
+        legend.text=element_text(size = 15) , 
+        title = element_text(size= 16))
+```
+
+
+The next graph displays the demand of bike rentals over months.There is a curve where we see that the demand of bikes increases as month increases then decreases which can be related the warmer weather as the months change. In summer, people tend to bike more because the weather conditions are better.
+
+```{r, echo=FALSE}
+ggplot(train,aes(x=as.integer(month),y=count))+
+  stat_smooth() +
+  geom_point(x=train$month,color="black") + 
+theme(axis.text=element_text(size=15),
+        axis.title=element_text(size=15),
+        legend.text=element_text(size = 15) , 
+        title = element_text(size= 16))  + 
+  labs( x = "Months",
+    y = "count(units)",title="Demand of bikes by months") + scale_x_continuous(breaks = c(1,2,3,4,5,6,7,8,9,10,11,12))
+```
+
+
+
+In addition, we look at the  distribution of bike rentals in the four different given weather conditions. As expected, the median decreases as we go from a weather 1, a clear weather to a weather 4 which is snowy. However, we have found a data point indicating that that 164 bikes were rented in hour on a weather 4 day. We are considering that this data point is an input error. 
+
+```{r,echo=FALSE}
+#filter(train, weather==4)
+train$weather <- factor(train$weather,
+                           labels = c("1", "2", "3", "4"))
+ggplot(train, aes(x =  weather, y= count)) + 
+  aes(colour=weather) +
+  geom_boxplot() + 
+  theme(axis.text=element_text(size=15),
+        axis.title=element_text(size=15,face="bold"), 
+        legend.text=element_text(size = 15) , 
+        title = element_text(size= 16))  + 
+  labs(title="Demand of bikes by weather") 
+
 
 ```
 
+
+Next, we decided to look at correlation of the other variables with ‘Count.’ We have removed the ‘registered’ and ‘casual’ variables as they are not predictor variables of our test set. The top four are hour, temp, atemp and humidity. We next looked at the correlation between temp and atemp which was 0.98 and at the absolute difference between them. Most of the observations had a difference which was less than six degrees. We concluded that having both temp and atemp would not yield the best result as one variable would capture most of the variation in Count, making the other variable not significant.
+
+So, for our final model, we decided to use temperature, humidity and hour since they are the variables correlating the highest with count. And for temperature we decided to go with temp because people ususally look at the temperature forecast beforehand. Bikers are likely to look at temperature of the day defore deciding to rent a bike or not. Humidity also plays an important factor. We found that high humidity discourages bike rentals. And hour is also an important factor as bike rentals are likely to be influenced by commuting hours and biking for leisure. That is why we believe these three predictor variables will yield the best model to predict bike rentals.
+
+```{r, echo=FALSE}
+#calculate correlation matrix by looking at numeric variables
+calc_cor <- train[, sapply(train, is.numeric)]
+my_cor <- as.matrix(cor(calc_cor))
+#arrange the matrix in 3 column format(X1,X2,value)
+my_cor_melt <- arrange(melt(my_cor), -abs(value))
+a<- filter(my_cor_melt, X1 == "count" & abs(value) > .3 & X2 != "registered" & X2 != "count" & X2 != "casual")
+kable(a, col.names = c("Count", "Other variables", "correlation"), caption = "Table with highest correlations with Count")
+
+
+#### look at correlation and difference between temp and atemp
+#filter(my_cor_melt, X1 == "temp" & X2 == "atemp") #correlation 0.98
+#b <- abs(as.integer((train$temp) - (train$atemp))) # most within 6 degrees
+#table(b)
+```
 
 # Model Fit
 
-```{r}
+$$ \widehat{Count} = \widehat{\beta_0} + \widehat{\beta_1} \ \ temperature + \widehat{\beta_2} \ \ humidity + \widehat{\beta_3} \ \ hour$$ ,
 
+```{r, echo=FALSE}
+m1 <- lm(count~temp+humidity+hour, data=train)
+pred1 <- predict(m1, test2)
 ```
-
 
 # Create Submission File
 
-```{r}
+On submitting our prediction on Kaggle, we got a score of 1.21517 where the score represents the Root Mean Squared Logarithmic Error (RMSLE).
 
+```{r, echo=FALSE}
+test2$pred1 <- pred1
+test2 <- test2 %>% mutate(pred3 = ifelse(pred1<0, 0,pred1))
+pred2 <- test2 %>% 
+  select(datetime, count = pred3)
+write.csv(pred2,file="submission.csv",row.names=FALSE)
 ```
+
+# Resources
+
+* Package ‘lubridate’ [documentation](https://cran.r-project.org/web/packages/lubridate/lubridate.pdf) 
